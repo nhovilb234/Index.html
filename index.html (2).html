@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sổ Khách Mừng</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Mulish:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --red: #c8102e; --gold: #b8960c; --cream: #fdf8f0;
+  --dark: #1a1008; --mid: #6b5b3e; --light: #f5ede0;
+  --border: #e8d9c4; --green: #15803d; --blue: #2563eb;
+}
+body { font-family: 'Mulish', sans-serif; background: var(--cream); min-height: 100vh; color: var(--dark); }
+
+.topbar {
+  background: var(--red); padding: 16px; text-align: center;
+  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(200,16,46,0.3);
+}
+.topbar h1 { font-family: 'Playfair Display', serif; color: white; font-size: 20px; }
+.topbar p { color: rgba(255,255,255,0.8); font-size: 11px; margin-top: 2px; }
+
+.nav {
+  display: flex; background: white;
+  border-bottom: 2px solid var(--border);
+  position: sticky; top: 64px; z-index: 99;
+}
+.nav-btn {
+  flex: 1; padding: 11px 2px; border: none; background: none;
+  font-family: 'Mulish', sans-serif; font-size: 11px; font-weight: 700;
+  color: var(--mid); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s;
+}
+.nav-btn.active { color: var(--red); border-bottom-color: var(--red); background: #fff5f5; }
+
+.page { display: none; padding: 14px; }
+.page.active { display: block; }
+
+.card {
+  background: white; border-radius: 14px; padding: 16px;
+  margin-bottom: 12px; box-shadow: 0 4px 20px rgba(200,16,46,0.08);
+  border: 1px solid var(--border);
+}
+.card-title {
+  font-family: 'Playfair Display', serif; font-size: 15px; color: var(--red);
+  margin-bottom: 12px; border-bottom: 1px dashed var(--border);
+  padding-bottom: 9px; display: flex; align-items: center; gap: 6px;
+}
+
+.form-group { margin-bottom: 10px; }
+label { display: block; font-size: 11px; font-weight: 700; color: var(--mid); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+input, textarea, select {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-family: 'Mulish', sans-serif; font-size: 14px;
+  color: var(--dark); background: var(--cream); outline: none; transition: border-color 0.2s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--red); background: white; }
+textarea { resize: none; height: 56px; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.btn {
+  width: 100%; padding: 12px; border: none; border-radius: 10px;
+  font-family: 'Mulish', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.btn:active { transform: scale(0.98); }
+.btn-red { background: var(--red); color: white; }
+.btn-gold { background: var(--gold); color: white; }
+.btn-green { background: var(--green); color: white; }
+.btn-blue { background: var(--blue); color: white; }
+.btn-gray { background: #e5e7eb; color: #374151; }
+.btn-purple { background: #7c3aed; color: white; }
+
+/* Page tabs */
+.page-tabs-wrap {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
+  overflow-x: auto; padding-bottom: 4px;
+}
+.page-tabs-wrap::-webkit-scrollbar { height: 3px; }
+.page-tabs-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+.pg-tab {
+  flex-shrink: 0; padding: 7px 13px; border-radius: 99px;
+  font-family: 'Mulish', sans-serif; font-size: 12px; font-weight: 700;
+  cursor: pointer; border: 1.5px solid var(--border); background: white; color: var(--mid); transition: all 0.2s;
+}
+.pg-tab.active { background: var(--red); border-color: var(--red); color: white; }
+.pg-tab.locked { background: #f0fdf4; border-color: #86efac; color: var(--green); }
+.pg-tab.locked.active { background: var(--green); border-color: var(--green); color: white; }
+.pg-tab-add {
+  flex-shrink: 0; padding: 7px 12px; border-radius: 99px; font-size: 12px; font-weight: 700;
+  cursor: pointer; border: 1.5px dashed var(--border); background: none; color: var(--mid);
+  transition: all 0.2s; font-family: 'Mulish', sans-serif;
+}
+.pg-tab-add:hover { border-color: var(--red); color: var(--red); }
+
+/* Guest row */
+.guest-row {
+  background: white; border: 1px solid var(--border); border-radius: 12px;
+  padding: 11px 13px 36px; margin-bottom: 8px; position: relative; animation: pop 0.2s ease;
+}
+@keyframes pop { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
+.stt-badge {
+  position: absolute; top: -7px; left: 11px; background: var(--red);
+  color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+}
+.row-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.fullname { font-weight: 700; font-size: 14px; padding-top: 4px; }
+.address { font-size: 11px; color: var(--mid); margin-top: 2px; }
+.note-text { font-size: 11px; color: #999; font-style: italic; margin-top: 2px; }
+.money { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--red); white-space: nowrap; padding-top: 4px; }
+
+.row-actions {
+  position: absolute; bottom: 7px; right: 8px;
+  display: flex; gap: 5px; align-items: center;
+}
+.btn-action {
+  border: none; border-radius: 7px; padding: 4px 9px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  font-family: 'Mulish', sans-serif; transition: all 0.15s;
+}
+.btn-edit { background: #eff6ff; color: var(--blue); }
+.btn-edit:hover { background: #dbeafe; }
+.btn-del-sm { background: #fee2e2; color: var(--red); }
+.btn-del-sm:hover { background: #fecaca; }
+
+.subtotal-bar {
+  background: linear-gradient(90deg, var(--light), #fceee0);
+  border: 1px dashed var(--gold); border-radius: 10px;
+  padding: 11px 14px; margin: 4px 0 10px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.subtotal-bar .lbl { font-size: 12px; color: var(--mid); font-weight: 600; }
+.subtotal-bar .amt { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; color: var(--gold); }
+.subtotal-bar .cnt { font-size: 11px; color: #aaa; margin-top: 1px; }
+
+.locked-banner {
+  background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--green); font-weight: 600;
+}
+
+.page-actions { display: flex; gap: 8px; margin-top: 6px; }
+.page-actions .btn { font-size: 13px; padding: 10px; }
+
+.grand-total {
+  background: linear-gradient(135deg, var(--dark), #3a2010);
+  border-radius: 14px; padding: 16px; color: white; text-align: center; margin-top: 10px;
+}
+.grand-total .lbl { font-size: 11px; opacity: 0.7; margin-bottom: 3px; }
+.grand-total .amt { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #ffd700; }
+.grand-total .meta { font-size: 11px; opacity: 0.65; margin-top: 3px; }
+
+.empty { text-align: center; padding: 36px 20px; color: #bbb; }
+.empty .icon { font-size: 36px; margin-bottom: 8px; }
+
+.event-strip {
+  background: linear-gradient(135deg, var(--red), #8b0d1f); color: white;
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.event-strip .names { font-family: 'Playfair Display', serif; font-size: 15px; }
+.event-strip .date { font-size: 11px; opacity: 0.8; margin-top: 1px; }
+.event-strip .badge { background: rgba(255,255,255,0.2); border-radius: 8px; padding: 6px 10px; text-align: center; }
+.event-strip .badge .num { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+.event-strip .badge .lbl2 { font-size: 10px; opacity: 0.85; }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 999; align-items: center; justify-content: center; padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: 18px; padding: 20px; width: 100%; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalPop 0.2s ease;
+  max-height: 90vh; overflow-y: auto;
+}
+@keyframes modalPop { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+.modal-title {
+  font-family: 'Playfair Display', serif; font-size: 17px; color: var(--red);
+  margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px dashed var(--border);
+}
+.modal-btns { display: flex; gap: 8px; margin-top: 14px; }
+.modal-btns .btn { font-size: 13px; padding: 11px; }
+
+/* Export page */
+.export-option {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px; background: white; border: 1.5px solid var(--border);
+  border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s;
+}
+.export-option:hover { border-color: var(--red); background: #fff5f5; }
+.export-option .icon { font-size: 28px; }
+.export-option .info .title { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+.export-option .info .desc { font-size: 12px; color: var(--mid); }
+
+/* Share steps */
+.share-steps { background: var(--light); border-radius: 12px; padding: 14px; margin-top: 10px; }
+.share-steps .step { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; font-size: 13px; }
+.share-steps .step:last-child { margin-bottom: 0; }
+.share-steps .num {
+  background: var(--red); color: white; border-radius: 99px;
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+}
+
+/* pgsize */
+.pgsize-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  background: var(--light); border-radius: 10px; padding: 10px 14px;
+}
+.pgsize-row label { margin: 0; flex-shrink: 0; }
+.pgsize-row input[type=number] { width: 70px; text-align: center; padding: 7px 8px; font-size: 14px; font-weight: 700; }
+
+.add-info-bar {
+  background: var(--light); border-radius: 10px; padding: 10px 12px;
+  margin-bottom: 12px; font-size: 12px; color: var(--mid);
+}
+
+/* Stats */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.stat-box { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
+.stat-box .num { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; margin-bottom: 2px; }
+.stat-box .lbl { font-size: 11px; color: var(--mid); }
+.stat-box.c-red .num { color: var(--red); }
+.stat-box.c-gold .num { color: var(--gold); }
+.stat-box.c-green .num { color: var(--green); }
+.stat-box.c-blue .num { color: var(--blue); }
+.page-bar-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.page-bar-item .pg-lbl { font-size: 11px; color: var(--mid); width: 55px; flex-shrink: 0; }
+.page-bar-item .bar-wrap { flex: 1; background: var(--light); border-radius: 99px; height: 7px; overflow: hidden; }
+.page-bar-item .bar-fill { height: 100%; background: linear-gradient(90deg, var(--red), #e85d75); border-radius: 99px; }
+.page-bar-item .bar-amt { font-size: 11px; font-weight: 700; color: var(--red); width: 65px; text-align: right; flex-shrink: 0; }
+
+.loading-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 9999; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+}
+.loading-overlay.open { display: flex; }
+.spinner {
+  width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: white; font-weight: 600; font-size: 14px; }
+
+/* Scan styles */
+.scan-btn-big {
+  flex: 1; border: 2px solid var(--border); border-radius: 16px;
+  background: white; padding: 20px 10px; text-align: center;
+  cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.scan-btn-big:active { transform: scale(0.97); background: var(--light); }
+
+.tip-list { display: flex; flex-direction: column; gap: 8px; }
+.tip-item { font-size: 13px; color: var(--mid); padding: 8px 12px; background: var(--light); border-radius: 8px; }
+
+.scan-row {
+  background: white; border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 13px; margin-bottom: 8px; position: relative;
+}
+.scan-row .scan-stt {
+  position: absolute; top: -7px; left: 11px; background: var(--blue);
+  color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+}
+.scan-row input {
+  padding: 7px 10px; font-size: 13px; margin-bottom: 6px; border-radius: 8px;
+}
+.scan-row input:last-child { margin-bottom: 0; }
+.scan-row .row-2-scan { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.scan-row .del-scan {
+  position: absolute; top: 8px; right: 10px; background: #fee2e2;
+  border: none; color: var(--red); border-radius: 6px; padding: 3px 8px;
+  font-size: 12px; cursor: pointer; font-family: Mulish,sans-serif; font-weight: 700;
+}
+
+.scan-error {
+  background: #fee2e2; border: 1.5px solid #fca5a5; border-radius: 12px;
+  padding: 14px; text-align: center; color: #dc2626; font-size: 13px; margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>💍 Sổ Khách Mừng</h1>
+  <p id="topbarSub">Quản lý danh sách theo trang</p>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showTab('pgSetup',this)">⚙️ Cài đặt</button>
+  <button class="nav-btn" onclick="showTab('pgAdd',this);updateAddInfo()">➕ Thêm</button>
+  <button class="nav-btn" onclick="showTab('pgScan',this)">📷 Scan</button>
+  <button class="nav-btn" onclick="showTab('pgList',this);renderList()">📋 Danh sách</button>
+  <button class="nav-btn" onclick="showTab('pgExport',this)">📤 Xuất</button>
+  <button class="nav-btn" onclick="showTab('pgStats',this);renderStats()">📊 Thống kê</button>
+</div>
+
+<!-- SETUP -->
+<div class="page active" id="pgSetup">
+  <div class="card">
+    <div class="card-title">💍 Thông tin sự kiện</div>
+    <div class="form-group">
+      <label>Loại sự kiện</label>
+      <select id="eventType" onchange="onTypeChange()">
+        <option value="wedding">💍 Đám Cưới</option>
+        <option value="funeral">🕯️ Đám Ma</option>
+      </select>
+    </div>
+    <div id="weddingFields">
+      <div class="row-2">
+        <div class="form-group"><label>Tên cô dâu</label><input id="bride" placeholder="Nguyễn Thị A"></div>
+        <div class="form-group"><label>Tên chú rể</label><input id="groom" placeholder="Trần Văn B"></div>
+      </div>
+      <div class="form-group"><label>Ngày cưới</label><input type="date" id="wDate"></div>
+    </div>
+    <div id="funeralFields" style="display:none">
+      <div class="form-group"><label>Tên người mất</label><input id="deceased" placeholder="Nguyễn Văn C"></div>
+      <div class="form-group"><label>Ngày mất</label><input type="date" id="fDate"></div>
+    </div>
+    <button class="btn btn-red" onclick="saveSetup()">✅ Lưu cài đặt</button>
+  </div>
+  <div class="card">
+    <div class="card-title">📄 Cài đặt trang</div>
+    <div class="pgsize-row">
+      <label>Số khách / trang:</label>
+      <input type="number" id="pgSizeInput" value="10" min="1" max="100">
+      <span style="font-size:12px;color:var(--mid)">khách</span>
+    </div>
+    <button class="btn btn-gold" onclick="applyPageSize()">✅ Áp dụng</button>
+  </div>
+</div>
+
+<!-- ADD -->
+<div class="page" id="pgAdd">
+  <div class="card">
+    <div class="card-title">👤 Thêm khách mừng</div>
+    <div class="add-info-bar">
+      📄 Trang: <strong id="addingToPage">Trang 1</strong> &nbsp;|&nbsp; Còn chỗ: <strong id="slotsLeft">—</strong>
+    </div>
+    <div class="form-group"><label>Họ và tên *</label><input id="gName" placeholder="Nguyễn Văn An"></div>
+    <div class="form-group"><label>Địa chỉ</label><input id="gAddr" placeholder="Thôn 2, xã Bình Hòa, Bình Định"></div>
+    <div class="form-group"><label id="moneyLbl">Tiền mừng (đồng) *</label><input type="text" id="gMoney" placeholder="200.000" inputmode="numeric"></div>
+    <div class="form-group"><label>Ghi chú</label><textarea id="gNote" placeholder="Quà thêm, bạn thân..."></textarea></div>
+    <button class="btn btn-red" onclick="addGuest()">➕ Thêm khách</button>
+  </div>
+</div>
+
+<!-- LIST -->
+<div class="page" id="pgList">
+  <div id="listContent"></div>
+</div>
+
+<!-- EXPORT -->
+<div class="page" id="pgExport">
+  <div class="card">
+    <div class="card-title">📤 Xuất & Chia sẻ</div>
+
+    <div class="export-option" onclick="exportAllPages()">
+      <div class="icon">📄</div>
+      <div class="info">
+        <div class="title">Xuất PDF toàn bộ danh sách</div>
+        <div class="desc">Tất cả trang · Có tổng từng trang · Tổng cộng cuối</div>
+      </div>
+    </div>
+
+    <div class="export-option" onclick="exportCurrentPage()">
+      <div class="icon">📃</div>
+      <div class="info">
+        <div class="title">Xuất PDF trang đang xem</div>
+        <div class="desc">Chỉ xuất trang hiện tại trong danh sách</div>
+      </div>
+    </div>
+
+    <div class="export-option" onclick="exportLockedOnly()">
+      <div class="icon">🔒</div>
+      <div class="info">
+        <div class="title">Xuất PDF trang đã chốt</div>
+        <div class="desc">Chỉ những trang đã chốt xong</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📱 Cách chia sẻ qua Zalo / Messenger / Gmail</div>
+    <div class="share-steps">
+      <div class="step"><div class="num">1</div><div>Nhấn một trong các nút xuất PDF bên trên → file PDF tự tải về điện thoại</div></div>
+      <div class="step"><div class="num">2</div><div>Mở <strong>Zalo / Messenger / Gmail</strong> → chọn người nhận</div></div>
+      <div class="step"><div class="num">3</div><div>Nhấn biểu tượng 📎 đính kèm file → chọn file PDF vừa tải (thường ở thư mục <strong>Download</strong>)</div></div>
+      <div class="step"><div class="num">4</div><div>Gửi đi! Người nhận có thể mở xem ngay trên điện thoại</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💬 Chia sẻ nhanh dạng text</div>
+    <p style="font-size:12px;color:var(--mid);margin-bottom:10px">Copy danh sách dạng text → paste thẳng vào Zalo/Messenger mà không cần file</p>
+    <button class="btn btn-purple" onclick="copyText()">📋 Copy danh sách text</button>
+    <div id="copyResult" style="display:none;margin-top:10px;padding:10px;background:#f0fdf4;border-radius:10px;font-size:12px;color:var(--green);font-weight:600;text-align:center">
+      ✅ Đã copy! Paste vào Zalo/Messenger để chia sẻ
+    </div>
+  </div>
+</div>
+
+<!-- SCAN -->
+<div class="page" id="pgScan">
+  <div class="card">
+    <div class="card-title">📷 Chụp ảnh sổ tay</div>
+    <p style="font-size:12px;color:var(--mid);margin-bottom:14px">Chụp ảnh danh sách viết tay → AI tự đọc và điền vào app. Hỗ trợ chữ viết tay, bảng kẻ, danh sách thông thường.</p>
+    <!-- 2 nút: Camera riêng + Thư viện riêng -->
+    <div id="scanArea">
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <div class="scan-btn-big" onclick="document.getElementById('cameraInput').click()">
+          <div style="font-size:34px;margin-bottom:6px">📷</div>
+          <div style="font-weight:700;font-size:14px;color:var(--red)">Mở Camera</div>
+          <div style="font-size:11px;color:var(--mid);margin-top:2px">Chụp trực tiếp</div>
+        </div>
+        <div class="scan-btn-big" onclick="document.getElementById('galleryInput').click()">
+          <div style="font-size:34px;margin-bottom:6px">🖼️</div>
+          <div style="font-weight:700;font-size:14px;color:var(--blue)">Thư viện ảnh</div>
+          <div style="font-size:11px;color:var(--mid);margin-top:2px">Chọn ảnh có sẵn</div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#aaa;text-align:center">Nếu camera không mở được → dùng Thư viện ảnh</p>
+    </div>
+    <!-- Camera input (có capture) -->
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="onImageSelected(event)">
+    <!-- Gallery input (không có capture, luôn mở thư viện) -->
+    <input type="file" id="galleryInput" accept="image/*" style="display:none" onchange="onImageSelected(event)">
+    <div id="previewWrap" style="display:none;margin-top:12px">
+      <div style="position:relative;border-radius:12px;overflow:hidden;border:2px solid var(--border)">
+        <img id="previewImg" style="width:100%;display:block;max-height:280px;object-fit:contain;background:#fafafa">
+        <button onclick="clearImage()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:99px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:Mulish,sans-serif;font-weight:700">✕ Xóa</button>
+      </div>
+      <button class="btn btn-red" style="margin-top:10px" onclick="scanImage()">🔍 Phân tích ảnh bằng AI</button>
+    </div>
+  </div>
+  <div id="scanResultCard" style="display:none">
+    <div class="card">
+      <div class="card-title">✅ AI đã đọc được</div>
+      <p style="font-size:12px;color:var(--mid);margin-bottom:12px">Kiểm tra lại thông tin rồi nhấn <strong>Thêm vào danh sách</strong></p>
+      <div id="scanResultList"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-gray" style="flex:1" onclick="clearScan()">🔄 Scan lại</button>
+        <button class="btn btn-green" style="flex:1" onclick="importScanned()">✅ Thêm vào danh sách</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">💡 Mẹo chụp ảnh đẹp</div>
+    <div class="tip-list">
+      <div class="tip-item">📸 Chụp thẳng góc, không nghiêng</div>
+      <div class="tip-item">💡 Đủ ánh sáng, tránh bóng tối</div>
+      <div class="tip-item">🔍 Chữ rõ nét, không bị mờ</div>
+      <div class="tip-item">📋 Mỗi lần chụp 1 trang sổ</div>
+      <div class="tip-item">✍️ Hỗ trợ cả chữ in và chữ viết tay</div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="page" id="pgStats">
+  <div id="statsContent"></div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Chỉnh sửa khách</div>
+    <input type="hidden" id="editPageIdx">
+    <input type="hidden" id="editGuestId">
+    <div class="form-group"><label>Họ và tên *</label><input id="editName"></div>
+    <div class="form-group"><label>Địa chỉ</label><input id="editAddr"></div>
+    <div class="form-group"><label>Số tiền (đồng) *</label><input type="text" id="editMoney" inputmode="numeric"></div>
+    <div class="form-group"><label>Ghi chú</label><textarea id="editNote"></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-gray" onclick="closeModal()">✕ Hủy</button>
+      <button class="btn btn-blue" onclick="saveEdit()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title">🗑️ Xác nhận xóa</div>
+    <p style="font-size:13px;color:var(--mid);margin-bottom:6px">Bạn muốn xóa khách:</p>
+    <p style="font-weight:700;font-size:15px;margin-bottom:10px" id="deleteGuestName"></p>
+    <p style="font-size:12px;color:#dc2626;margin-bottom:4px">⚠️ Sau khi xóa không thể khôi phục.</p>
+    <p style="font-size:12px;color:var(--mid)">Bạn có thể vào tab <strong>Thêm</strong> để tạo lại.</p>
+    <div class="modal-btns">
+      <button class="btn btn-gray" onclick="closeDeleteModal()">✕ Hủy</button>
+      <button class="btn btn-red" onclick="confirmDelete()">🗑️ Xóa</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Đang tạo PDF...</div>
+</div>
+
+<script>
+let setup = { type:'wedding', bride:'', groom:'', deceased:'', wDate:'', fDate:'' };
+let pageSize = 10;
+let pages = [{ guests:[], locked:false }];
+let currentViewPage = 0;
+let pendingDelete = null;
+
+// ── Tabs ──
+function showTab(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── Setup ──
+function onTypeChange() {
+  const t = document.getElementById('eventType').value;
+  document.getElementById('weddingFields').style.display = t==='wedding'?'':'none';
+  document.getElementById('funeralFields').style.display = t==='funeral'?'':'none';
+}
+function saveSetup() {
+  setup.type = document.getElementById('eventType').value;
+  setup.bride = document.getElementById('bride').value.trim();
+  setup.groom = document.getElementById('groom').value.trim();
+  setup.deceased = document.getElementById('deceased').value.trim();
+  setup.wDate = document.getElementById('wDate').value;
+  setup.fDate = document.getElementById('fDate').value;
+  document.getElementById('moneyLbl').textContent = setup.type==='wedding' ? 'Tien mung (dong) *' : 'Tien phung (dong) *';
+  const sub = setup.type==='wedding'
+    ? `Dam cuoi ${setup.bride&&setup.groom ? setup.bride+' & '+setup.groom : ''}`
+    : `Dam tang ${setup.deceased||''}`;
+  document.getElementById('topbarSub').textContent = sub;
+  alert('Da luu cai dat!');
+}
+function applyPageSize() {
+  const v = parseInt(document.getElementById('pgSizeInput').value);
+  if (!v||v<1) { alert('So khach phai >= 1!'); return; }
+  pageSize = v;
+  updateAddInfo();
+  alert('Moi trang toi da ' + pageSize + ' khach!');
+}
+
+// ── Active page ──
+function getActivePage() {
+  for (let i=pages.length-1; i>=0; i--) { if (!pages[i].locked) return i; }
+  pages.push({ guests:[], locked:false });
+  return pages.length-1;
+}
+function updateAddInfo() {
+  const ai = getActivePage();
+  const slots = pageSize - pages[ai].guests.length;
+  document.getElementById('addingToPage').textContent = 'Trang '+(ai+1);
+  document.getElementById('slotsLeft').textContent = slots>0 ? slots+' cho' : 'Da day';
+}
+
+// ── Add guest ──
+function addGuest() {
+  const name = document.getElementById('gName').value.trim();
+  const addr = document.getElementById('gAddr').value.trim();
+  const money = parseFloat(document.getElementById('gMoney').value)||0;
+  const note = document.getElementById('gNote').value.trim();
+  if (!name) { alert('Vui long nhap ho ten!'); return; }
+  if (money<=0) { alert('Vui long nhap so tien!'); return; }
+  let ai = getActivePage();
+  if (pages[ai].guests.length >= pageSize) {
+    if (!confirm('Trang '+(ai+1)+' da du '+pageSize+' khach.\nTu dong chot va sang trang '+(ai+2)+'?')) return;
+    pages[ai].locked = true;
+    pages.push({ guests:[], locked:false });
+    ai = pages.length-1;
+  }
+  pages[ai].guests.push({ id: Date.now(), name, addr, money, note });
+  document.getElementById('gName').value='';
+  document.getElementById('gAddr').value='';
+  document.getElementById('gMoney').value='';
+  document.getElementById('gNote').value='';
+  updateAddInfo();
+  currentViewPage = ai;
+  alert('Da them "'+name+'" vao Trang '+(ai+1));
+}
+
+// ── Edit ──
+function openEdit(pi, gid) {
+  const g = pages[pi].guests.find(x=>x.id===gid); if (!g) return;
+  document.getElementById('editPageIdx').value=pi;
+  document.getElementById('editGuestId').value=gid;
+  document.getElementById('editName').value=g.name;
+  document.getElementById('editAddr').value=g.addr;
+  document.getElementById('editMoney').value=g.money;
+  document.getElementById('editNote').value=g.note;
+  document.getElementById('editModal').classList.add('open');
+}
+function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+function saveEdit() {
+  const pi=parseInt(document.getElementById('editPageIdx').value);
+  const gid=parseInt(document.getElementById('editGuestId').value);
+  const name=document.getElementById('editName').value.trim();
+  const addr=document.getElementById('editAddr').value.trim();
+  const money=parseFloat(document.getElementById('editMoney').value)||0;
+  const note=document.getElementById('editNote').value.trim();
+  if (!name) { alert('Vui long nhap ho ten!'); return; }
+  if (money<=0) { alert('Vui long nhap so tien!'); return; }
+  const g=pages[pi].guests.find(x=>x.id===gid);
+  if (g) { g.name=name; g.addr=addr; g.money=money; g.note=note; }
+  closeModal(); renderList();
+}
+
+// ── Delete ──
+function openDelete(pi, gid) {
+  const g=pages[pi].guests.find(x=>x.id===gid); if (!g) return;
+  pendingDelete={pi,gid};
+  document.getElementById('deleteGuestName').textContent=g.name+' — '+fmtS(g.money);
+  document.getElementById('deleteModal').classList.add('open');
+}
+function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('open'); pendingDelete=null; }
+function confirmDelete() {
+  if (!pendingDelete) return;
+  pages[pendingDelete.pi].guests=pages[pendingDelete.pi].guests.filter(g=>g.id!==pendingDelete.gid);
+  closeDeleteModal(); renderList();
+}
+
+// ── Lock ──
+function lockPage(idx) {
+  if (pages[idx].guests.length===0) { alert('Trang chua co khach!'); return; }
+  pages[idx].locked=true;
+  if (idx===pages.length-1) pages.push({ guests:[], locked:false });
+  currentViewPage=idx+1; updateAddInfo(); renderList();
+}
+function unlockPage(idx) {
+  if (!confirm('Bo chot Trang '+(idx+1)+'?')) return;
+  pages[idx].locked=false; renderList();
+}
+function addNewPage() {
+  const last=pages[pages.length-1];
+  if (!last.locked&&last.guests.length===0) { alert('Trang hien tai chua co khach!'); return; }
+  if (!last.locked) { if (!confirm('Chot Trang '+pages.length+' va tao trang moi?')) return; last.locked=true; }
+  pages.push({ guests:[], locked:false });
+  currentViewPage=pages.length-1; updateAddInfo(); renderList();
+}
+
+// ── Format ──
+// Format tiền VN có dấu chấm: 1.000.000đ
+function fmt(n) {
+  if (!n) return '0đ';
+  return n.toLocaleString('vi-VN').replace(/,/g,'.')+'đ';
+}
+// Format ngắn hiển thị trong danh sách: vẫn dùng dấu chấm đầy đủ
+function fmtS(n) {
+  if (!n) return '0đ';
+  return n.toLocaleString('vi-VN').replace(/,/g,'.')+'đ';
+}
+function fmtFull(n) { return n.toLocaleString('vi-VN').replace(/,/g,'.')+' đồng'; }
+
+// ── Render list ──
+function renderList() {
+  while (pages.length>1&&!pages[pages.length-1].locked&&pages[pages.length-1].guests.length===0) {
+    if (currentViewPage<pages.length-1) pages.pop(); else break;
+  }
+  if (currentViewPage>=pages.length) currentViewPage=pages.length-1;
+  const container=document.getElementById('listContent');
+  const totalGuests=pages.reduce((s,p)=>s+p.guests.length,0);
+  const grandTotal=pages.reduce((s,p)=>s+p.guests.reduce((x,g)=>x+g.money,0),0);
+  let html='';
+
+  if (setup.type==='wedding'&&(setup.bride||setup.groom)) {
+    const d=setup.wDate?new Date(setup.wDate).toLocaleDateString('vi-VN'):'';
+    html+=`<div class="event-strip"><div><div class="names">Dam cuoi ${setup.bride||'?'} & ${setup.groom||'?'}</div><div class="date">${d}</div></div><div class="badge"><div class="num">${totalGuests}</div><div class="lbl2">Khach</div></div></div>`;
+  } else if (setup.type==='funeral'&&setup.deceased) {
+    const d=setup.fDate?new Date(setup.fDate).toLocaleDateString('vi-VN'):'';
+    html+=`<div class="event-strip" style="background:linear-gradient(135deg,#2c2c2c,#555)"><div><div class="names">Dam tang ${setup.deceased}</div><div class="date">${d}</div></div><div class="badge"><div class="num">${totalGuests}</div><div class="lbl2">Nguoi</div></div></div>`;
+  }
+
+  if (totalGuests===0) {
+    html+=`<div class="empty"><div class="icon">📋</div><p>Chua co khach nao<br>Nhan <strong>Them</strong> de bat dau</p></div>`;
+    container.innerHTML=html; return;
+  }
+
+  html+='<div class="page-tabs-wrap">';
+  pages.forEach((p,i)=>{
+    const cls=i===currentViewPage?(p.locked?'pg-tab locked active':'pg-tab active'):(p.locked?'pg-tab locked':'pg-tab');
+    html+=`<button class="${cls}" onclick="viewPage(${i})">${p.locked?'🔒':''} Trang ${i+1} <span style="opacity:0.65;font-size:10px">(${p.guests.length})</span></button>`;
+  });
+  html+=`<button class="pg-tab-add" onclick="addNewPage()">+ Trang moi</button></div>`;
+
+  const cp=pages[currentViewPage];
+  const pageTotal=cp.guests.reduce((s,g)=>s+g.money,0);
+  let gOffset=0; for (let i=0;i<currentViewPage;i++) gOffset+=pages[i].guests.length;
+
+  if (cp.locked) {
+    html+=`<div class="locked-banner">🔒 Trang ${currentViewPage+1} da chot · ${cp.guests.length} khach · ${fmt(pageTotal)}
+      <button onclick="unlockPage(${currentViewPage})" style="margin-left:auto;background:none;border:1.5px solid #86efac;border-radius:7px;padding:4px 10px;font-size:11px;color:var(--green);cursor:pointer;font-family:Mulish,sans-serif;font-weight:700">Bo chot de sua</button>
+    </div>`;
+  }
+
+  if (cp.guests.length===0) {
+    html+=`<div class="empty"><div class="icon">📝</div><p>Trang ${currentViewPage+1} chua co khach</p></div>`;
+  } else {
+    cp.guests.forEach((g,i)=>{
+      const stt=gOffset+i+1;
+      html+=`<div class="guest-row">
+        <div class="stt-badge">#${stt}</div>
+        <div class="row-top">
+          <div>
+            <div class="fullname">${g.name}</div>
+            ${g.addr?`<div class="address">📍 ${g.addr}</div>`:''}
+            ${g.note?`<div class="note-text">📝 ${g.note}</div>`:''}
+          </div>
+          <div class="money">${fmtS(g.money)}</div>
+        </div>
+        <div class="row-actions">
+          ${cp.locked
+            ? `<span style="font-size:10px;color:#aaa">🔒 Da chot</span>`
+            : `<button class="btn-action btn-edit" onclick="openEdit(${currentViewPage},${g.id})">✏️ Sua</button>
+               <button class="btn-action btn-del-sm" onclick="openDelete(${currentViewPage},${g.id})">🗑️ Xoa</button>`}
+        </div>
+      </div>`;
+    });
+    html+=`<div class="subtotal-bar"><div><div class="lbl">📌 Tong trang ${currentViewPage+1}</div><div class="cnt">${cp.guests.length} khach${cp.locked?' · 🔒 Da chot':''}</div></div><div class="amt">${fmt(pageTotal)}</div></div>`;
+    if (!cp.locked) {
+      html+=`<div class="page-actions">
+        <button class="btn btn-green" style="flex:1" onclick="lockPage(${currentViewPage})">🔒 Chot trang</button>
+        <button class="btn btn-blue" style="flex:1" onclick="lockPage(${currentViewPage})">➡️ Chot & trang moi</button>
+      </div>`;
+    }
+  }
+  html+=`<div class="grand-total" style="margin-top:14px"><div class="lbl">Tong cong ${totalGuests} khach · ${pages.filter(p=>p.locked).length}/${pages.length} trang da chot</div><div class="amt">${fmt(grandTotal)}</div><div class="meta">Trung binh ${totalGuests>0?fmtS(Math.round(grandTotal/totalGuests)):'0d'}/khach</div></div>`;
+  container.innerHTML=html;
+}
+function viewPage(i) { currentViewPage=i; renderList(); }
+
+// ══════════════════════════════════
+// ── PDF EXPORT ──
+// ══════════════════════════════════
+
+function showLoading(text) {
+  document.getElementById('loadingText').textContent = text||'Dang tao PDF...';
+  document.getElementById('loadingOverlay').classList.add('open');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('open');
+}
+
+function buildPDF(pagesToExport, title) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 14;
+
+  // Helper: safe text (remove Vietnamese diacritics for PDF)
+  function safe(str) {
+    if (!str) return '';
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .replace(/đ/g,'d').replace(/Đ/g,'D')
+      .replace(/[^\x00-\x7F]/g,'?');
+  }
+
+  function fmtNum(n) { return n.toLocaleString('vi-VN'); }
+
+  // ── Header ──
+  function drawHeader(doc, title, subtitle) {
+    // Red bar
+    doc.setFillColor(200,16,46);
+    doc.rect(0,0,pageW,22,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(14);
+    doc.setFont('helvetica','bold');
+    doc.text(safe(title), pageW/2, 10, { align:'center' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica','normal');
+    doc.text(safe(subtitle), pageW/2, 16, { align:'center' });
+    doc.setTextColor(0,0,0);
+  }
+
+  function drawFooter(doc, pageNum, totalPages) {
+    const y = pageH - 8;
+    doc.setFillColor(245,237,224);
+    doc.rect(0, pageH-14, pageW, 14, 'F');
+    doc.setFontSize(8);
+    doc.setTextColor(107,91,62);
+    doc.setFont('helvetica','normal');
+    doc.text('So Khach Mung', margin, y);
+    doc.text('Trang '+pageNum+'/'+totalPages, pageW/2, y, {align:'center'});
+    doc.text(new Date().toLocaleDateString('vi-VN'), pageW-margin, y, {align:'right'});
+    doc.setTextColor(0,0,0);
+  }
+
+  // Event info
+  const eventType = setup.type;
+  let eventTitle = '', eventSub = '';
+  if (eventType==='wedding') {
+    eventTitle = 'SO KHACH MUNG DAM CUOI';
+    if (setup.bride&&setup.groom) eventTitle += ': '+safe(setup.bride)+' & '+safe(setup.groom);
+    eventSub = setup.wDate ? 'Ngay cuoi: '+new Date(setup.wDate).toLocaleDateString('vi-VN') : '';
+  } else {
+    eventTitle = 'SO PHUNG VIEN DAM TANG';
+    if (setup.deceased) eventTitle += ': '+safe(setup.deceased);
+    eventSub = setup.fDate ? 'Ngay mat: '+new Date(setup.fDate).toLocaleDateString('vi-VN') : '';
+  }
+
+  let isFirstPage = true;
+  let pdfPageNum = 1;
+  let totalPdfPages = 0;
+
+  // Count total PDF pages (estimate)
+  // We'll do 2 passes: first generate, then count
+  // Simple approach: each data page = 1 PDF page
+  totalPdfPages = pagesToExport.length + 1; // +1 for summary
+
+  // Offset for numbering
+  let pdfPageCounter = [0];
+
+  pagesToExport.forEach((pg, pgIdx) => {
+    if (!isFirstPage) { doc.addPage(); pdfPageNum++; }
+    isFirstPage = false;
+
+    drawHeader(doc, eventTitle, eventSub);
+
+    let y = 28;
+
+    // Page label
+    doc.setFillColor(240,253,244);
+    doc.setDrawColor(134,239,172);
+    doc.roundedRect(margin, y, pageW-margin*2, 8, 2, 2, 'FD');
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(21,128,61);
+    const pgLabel = pg.locked ? 'TRANG '+(pg.origIdx+1)+' [DA CHOT]' : 'TRANG '+(pg.origIdx+1);
+    doc.text(pgLabel, margin+4, y+5.5);
+    doc.setTextColor(0,0,0);
+    y += 11;
+
+    // Table
+    const tableData = pg.guests.map((g, i) => [
+      pg.guestOffset+i+1,
+      safe(g.name),
+      safe(g.addr)||'—',
+      fmtNum(g.money)+' d',
+      safe(g.note)||'—'
+    ]);
+
+    doc.autoTable({
+      startY: y,
+      head: [['STT','Ho va ten','Dia chi','So tien','Ghi chu']],
+      body: tableData,
+      margin: { left:margin, right:margin },
+      styles: { fontSize:8, cellPadding:2.5, font:'helvetica', overflow:'linebreak' },
+      headStyles: { fillColor:[200,16,46], textColor:255, fontStyle:'bold', fontSize:8 },
+      alternateRowStyles: { fillColor:[253,248,240] },
+      columnStyles: {
+        0: { cellWidth:8, halign:'center' },
+        1: { cellWidth:38 },
+        2: { cellWidth:45 },
+        3: { cellWidth:28, halign:'right' },
+        4: { cellWidth:30 }
+      },
+      didDrawPage: (data) => {}
+    });
+
+    y = doc.lastAutoTable.finalY + 4;
+
+    // Page subtotal
+    const pageTotal = pg.guests.reduce((s,g)=>s+g.money,0);
+    doc.setFillColor(253,248,240);
+    doc.setDrawColor(184,150,12);
+    doc.roundedRect(margin, y, pageW-margin*2, 10, 2, 2, 'FD');
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(184,150,12);
+    doc.text('Tong trang '+(pg.origIdx+1)+': '+fmtNum(pageTotal)+' dong', pageW-margin-2, y+6.5, {align:'right'});
+    doc.text(pg.guests.length+' khach', margin+3, y+6.5);
+    doc.setTextColor(0,0,0);
+
+    drawFooter(doc, pdfPageNum, totalPdfPages);
+  });
+
+  // Summary page
+  doc.addPage(); pdfPageNum++;
+  drawHeader(doc, 'TONG KET - '+eventTitle, eventSub);
+
+  let y = 30;
+  const allGuests = pagesToExport.flatMap(p=>p.guests);
+  const grandTotal = allGuests.reduce((s,g)=>s+g.money,0);
+  const avg = allGuests.length>0 ? Math.round(grandTotal/allGuests.length) : 0;
+
+  // Summary table per page
+  const summaryData = pagesToExport.map((pg,i) => {
+    const pt = pg.guests.reduce((s,g)=>s+g.money,0);
+    return [
+      'Trang '+(pg.origIdx+1),
+      pg.guests.length+' khach',
+      fmtNum(pt)+' d',
+      pg.locked?'Da chot':'Chua chot'
+    ];
+  });
+
+  doc.autoTable({
+    startY: y,
+    head: [['Trang','So khach','Tong tien','Trang thai']],
+    body: summaryData,
+    foot: [['TONG CONG', allGuests.length+' khach', fmtNum(grandTotal)+' d', '']],
+    margin: { left:margin, right:margin },
+    styles: { fontSize:9, cellPadding:3, font:'helvetica' },
+    headStyles: { fillColor:[200,16,46], textColor:255, fontStyle:'bold' },
+    footStyles: { fillColor:[26,16,8], textColor:255, fontStyle:'bold' },
+    alternateRowStyles: { fillColor:[253,248,240] },
+    columnStyles: {
+      0: { cellWidth:30 },
+      1: { cellWidth:30, halign:'center' },
+      2: { cellWidth:50, halign:'right' },
+      3: { cellWidth:40, halign:'center' }
+    }
+  });
+
+  y = doc.lastAutoTable.finalY + 8;
+
+  // Big total box
+  doc.setFillColor(26,16,8);
+  doc.roundedRect(margin, y, pageW-margin*2, 24, 3, 3, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.text('TONG CONG TAT CA KHACH', pageW/2, y+7, {align:'center'});
+  doc.setFontSize(16);
+  doc.setFont('helvetica','bold');
+  doc.setTextColor(255,215,0);
+  doc.text(fmtNum(grandTotal)+' dong', pageW/2, y+17, {align:'center'});
+  doc.setTextColor(0,0,0);
+
+  y += 28;
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica','normal');
+  doc.text('Trung binh: '+fmtNum(avg)+' dong/khach', margin, y);
+  doc.text('Ngay xuat: '+new Date().toLocaleDateString('vi-VN'), pageW-margin, y, {align:'right'});
+
+  drawFooter(doc, pdfPageNum, totalPdfPages);
+
+  return doc;
+}
+
+function exportAllPages() {
+  const totalGuests = pages.reduce((s,p)=>s+p.guests.length,0);
+  if (totalGuests===0) { alert('Chua co khach nao!'); return; }
+  showLoading('Dang tao PDF toan bo danh sach...');
+  setTimeout(()=>{
+    try {
+      let offset=0;
+      const pg = pages.map((p,i)=>{ const o={...p, origIdx:i, guestOffset:offset}; offset+=p.guests.length; return o; });
+      const doc = buildPDF(pg, 'DANH SACH KHACH');
+      doc.save('danh-sach-khach-mung-toan-bo.pdf');
+    } catch(e) { alert('Loi tao PDF: '+e.message); }
+    hideLoading();
+  }, 100);
+}
+
+function exportCurrentPage() {
+  const cp = pages[currentViewPage];
+  if (cp.guests.length===0) { alert('Trang nay chua co khach!'); return; }
+  showLoading('Dang tao PDF trang '+(currentViewPage+1)+'...');
+  setTimeout(()=>{
+    try {
+      let offset=0;
+      for(let i=0;i<currentViewPage;i++) offset+=pages[i].guests.length;
+      const pg = [{ ...cp, origIdx:currentViewPage, guestOffset:offset }];
+      const doc = buildPDF(pg, 'TRANG '+(currentViewPage+1));
+      doc.save('danh-sach-khach-trang-'+(currentViewPage+1)+'.pdf');
+    } catch(e) { alert('Loi tao PDF: '+e.message); }
+    hideLoading();
+  }, 100);
+}
+
+function exportLockedOnly() {
+  const locked = pages.filter(p=>p.locked);
+  if (locked.length===0) { alert('Chua co trang nao duoc chot!'); return; }
+  showLoading('Dang tao PDF cac trang da chot...');
+  setTimeout(()=>{
+    try {
+      let offset=0;
+      const pg = pages
+        .map((p,i)=>{ const o={...p, origIdx:i, guestOffset:offset}; offset+=p.guests.length; return o; })
+        .filter(p=>p.locked);
+      const doc = buildPDF(pg, 'TRANG DA CHOT');
+      doc.save('danh-sach-khach-da-chot.pdf');
+    } catch(e) { alert('Loi tao PDF: '+e.message); }
+    hideLoading();
+  }, 100);
+}
+
+// ── Copy text ──
+function copyText() {
+  const totalGuests = pages.reduce((s,p)=>s+p.guests.length,0);
+  if (totalGuests===0) { alert('Chua co khach nao!'); return; }
+
+  let text = '';
+  const eventType = setup.type;
+  if (eventType==='wedding'&&(setup.bride||setup.groom)) {
+    text += '== DAM CUOI: '+setup.bride+' & '+setup.groom+' ==\n';
+    if (setup.wDate) text += 'Ngay cuoi: '+new Date(setup.wDate).toLocaleDateString('vi-VN')+'\n';
+  } else if (eventType==='funeral'&&setup.deceased) {
+    text += '== DAM TANG: '+setup.deceased+' ==\n';
+    if (setup.fDate) text += 'Ngay mat: '+new Date(setup.fDate).toLocaleDateString('vi-VN')+'\n';
+  }
+  text += '================================\n';
+
+  let stt=1;
+  pages.forEach((p,pi)=>{
+    const pt=p.guests.reduce((s,g)=>s+g.money,0);
+    text += '\n--- Trang '+(pi+1)+(p.locked?' [Da chot]':'')+' ---\n';
+    p.guests.forEach(g=>{
+      text += stt+'. '+g.name;
+      if (g.addr) text += ' | '+g.addr;
+      text += ' | '+g.money.toLocaleString('vi-VN')+'d';
+      if (g.note) text += ' | '+g.note;
+      text += '\n';
+      stt++;
+    });
+    text += '=> Tong trang '+(pi+1)+': '+pt.toLocaleString('vi-VN')+'d ('+p.guests.length+' khach)\n';
+  });
+
+  const grandTotal=pages.reduce((s,p)=>s+p.guests.reduce((x,g)=>x+g.money,0),0);
+  text += '\n================================\n';
+  text += 'TONG CONG: '+grandTotal.toLocaleString('vi-VN')+'d\n';
+  text += 'Tong so khach: '+totalGuests+'\n';
+  text += 'Ngay xuat: '+new Date().toLocaleDateString('vi-VN');
+
+  navigator.clipboard.writeText(text).then(()=>{
+    document.getElementById('copyResult').style.display='block';
+    setTimeout(()=>document.getElementById('copyResult').style.display='none', 3000);
+  }).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    document.getElementById('copyResult').style.display='block';
+    setTimeout(()=>document.getElementById('copyResult').style.display='none', 3000);
+  });
+}
+
+// ── Stats ──
+function renderStats() {
+  const container=document.getElementById('statsContent');
+  const totalGuests=pages.reduce((s,p)=>s+p.guests.length,0);
+  if (totalGuests===0) { container.innerHTML=`<div class="empty"><div class="icon">📊</div><p>Chua co du lieu</p></div>`; return; }
+  const all=pages.flatMap(p=>p.guests);
+  const total=all.reduce((s,g)=>s+g.money,0);
+  const avg=Math.round(total/totalGuests);
+  const max=Math.max(...all.map(g=>g.money));
+  const min=Math.min(...all.map(g=>g.money));
+  const maxG=all.find(g=>g.money===max);
+  const minG=all.find(g=>g.money===min);
+  const lockedPg=pages.filter(p=>p.locked).length;
+  const pageTotals=pages.map(p=>p.guests.reduce((s,g)=>s+g.money,0));
+  const maxPT=Math.max(...pageTotals,1);
+  const bars=pages.map((p,i)=>{
+    const pt=pageTotals[i]; const pct=(pt/maxPT*100).toFixed(1);
+    return `<div class="page-bar-item"><div class="pg-lbl">Trang ${i+1}${p.locked?' 🔒':''}</div><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div><div class="bar-amt">${fmtS(pt)}</div></div>`;
+  }).join('');
+  container.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-box c-red"><div class="num">${fmtS(total)}</div><div class="lbl">Tong thu</div></div>
+      <div class="stat-box c-blue"><div class="num">${totalGuests}</div><div class="lbl">Tong khach</div></div>
+      <div class="stat-box c-gold"><div class="num">${fmtS(avg)}</div><div class="lbl">Trung binh</div></div>
+      <div class="stat-box c-green"><div class="num">${lockedPg}/${pages.length}</div><div class="lbl">Trang da chot</div></div>
+    </div>
+    <div class="card"><div class="card-title">🏆 Cao nhat & Thap nhat</div>
+      <div class="guest-row" style="margin-bottom:8px;padding-bottom:11px"><div class="stt-badge" style="background:#d4af37">Max</div>
+        <div class="row-top"><div><div class="fullname">${maxG.name}</div>${maxG.addr?`<div class="address">📍 ${maxG.addr}</div>`:''}</div><div class="money" style="color:#d4af37">${fmtS(max)}</div></div></div>
+      <div class="guest-row" style="padding-bottom:11px"><div class="stt-badge" style="background:#6b7280">Min</div>
+        <div class="row-top"><div><div class="fullname">${minG.name}</div>${minG.addr?`<div class="address">📍 ${minG.addr}</div>`:''}</div><div class="money" style="color:#6b7280">${fmtS(min)}</div></div></div>
+    </div>
+    <div class="card"><div class="card-title">📄 Tong tien tung trang</div>${bars}</div>
+    <div class="grand-total"><div class="lbl">Tong cong</div><div class="amt">${fmt(total)}</div><div class="meta">${totalGuests} khach · ${pages.length} trang · ${lockedPg} da chot</div></div>`;
+}
+
+// ── Auto format tiền khi nhập ──
+function formatMoneyInput(input) {
+  // Lấy số thuần
+  let raw = input.value.replace(/\D/g,'');
+  if (!raw) { input.value = ''; return; }
+  let num = parseInt(raw);
+  // Hiển thị có dấu chấm trong input
+  input.setAttribute('data-raw', num);
+  input.value = num.toLocaleString('vi-VN').replace(/,/g,'.');
+}
+
+function getRawMoney(input) {
+  // Lấy số thực từ input đã format
+  return parseInt(input.value.replace(/\./g,'').replace(/\D/g,''))||0;
+}
+
+// Gắn sự kiện format vào các input tiền
+function bindMoneyInputs() {
+  ['gMoney','editMoney'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function() {
+      const pos = this.selectionStart;
+      const oldLen = this.value.length;
+      let raw = this.value.replace(/\./g,'').replace(/\D/g,'');
+      if (!raw) return;
+      let num = parseInt(raw);
+      let formatted = num.toLocaleString('vi-VN').replace(/,/g,'.');
+      this.value = formatted;
+      // Giữ vị trí con trỏ
+      const newLen = this.value.length;
+      this.setSelectionRange(pos+(newLen-oldLen), pos+(newLen-oldLen));
+    });
+    el.addEventListener('focus', function() {
+      // Khi focus hiển thị số có dấu chấm
+      let raw = this.value.replace(/\./g,'').replace(/\D/g,'');
+      if (raw) this.value = parseInt(raw).toLocaleString('vi-VN').replace(/,/g,'.');
+    });
+  });
+}
+
+// Override addGuest để đọc đúng số từ input đã format
+const _origAddGuest = addGuest;
+function addGuest() {
+  const moneyEl = document.getElementById('gMoney');
+  const rawMoney = parseInt(moneyEl.value.replace(/\./g,'').replace(/\D/g,''))||0;
+  const name = document.getElementById('gName').value.trim();
+  const addr = document.getElementById('gAddr').value.trim();
+  const note = document.getElementById('gNote').value.trim();
+  if (!name) { alert('Vui lòng nhập họ tên!'); return; }
+  if (rawMoney<=0) { alert('Vui lòng nhập số tiền!'); return; }
+  let ai = getActivePage();
+  if (pages[ai].guests.length >= pageSize) {
+    if (!confirm('Trang '+(ai+1)+' đã đủ '+pageSize+' khách.\nTự động chốt và sang trang '+(ai+2)+'?')) return;
+    pages[ai].locked = true;
+    pages.push({ guests:[], locked:false });
+    ai = pages.length-1;
+  }
+  pages[ai].guests.push({ id: Date.now(), name, addr, money:rawMoney, note });
+  document.getElementById('gName').value='';
+  document.getElementById('gAddr').value='';
+  document.getElementById('gMoney').value='';
+  document.getElementById('gNote').value='';
+  updateAddInfo();
+  currentViewPage = ai;
+  alert('✅ Đã thêm "'+name+'" — '+fmt(rawMoney)+' vào Trang '+(ai+1));
+}
+
+// Override saveEdit để đọc đúng số
+const _origSaveEdit = saveEdit;
+function saveEdit() {
+  const pi=parseInt(document.getElementById('editPageIdx').value);
+  const gid=parseInt(document.getElementById('editGuestId').value);
+  const name=document.getElementById('editName').value.trim();
+  const addr=document.getElementById('editAddr').value.trim();
+  const moneyEl=document.getElementById('editMoney');
+  const money=parseInt(moneyEl.value.replace(/\./g,'').replace(/\D/g,''))||0;
+  const note=document.getElementById('editNote').value.trim();
+  if (!name) { alert('Vui lòng nhập họ tên!'); return; }
+  if (money<=0) { alert('Vui lòng nhập số tiền!'); return; }
+  const g=pages[pi].guests.find(x=>x.id===gid);
+  if (g) { g.name=name; g.addr=addr; g.money=money; g.note=note; }
+  closeModal(); renderList();
+}
+
+// Override openEdit để hiển thị số có dấu chấm trong modal
+const _origOpenEdit = openEdit;
+function openEdit(pi, gid) {
+  const g = pages[pi].guests.find(x=>x.id===gid); if (!g) return;
+  document.getElementById('editPageIdx').value=pi;
+  document.getElementById('editGuestId').value=gid;
+  document.getElementById('editName').value=g.name;
+  document.getElementById('editAddr').value=g.addr;
+  document.getElementById('editMoney').value=g.money.toLocaleString('vi-VN').replace(/,/g,'.');
+  document.getElementById('editNote').value=g.note;
+  document.getElementById('editModal').classList.add('open');
+}
+
+// Close modals
+document.getElementById('editModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('deleteModal').addEventListener('click',function(e){if(e.target===this)closeDeleteModal();});
+
+updateAddInfo();
+
+// ══════════════════════════════════
+// ── SCAN / CAMERA ──
+// ══════════════════════════════════
+
+let scannedGuests = [];
+let currentImageBase64 = null;
+
+function triggerCamera() {
+  document.getElementById('cameraInput').click();
+}
+
+function onImageSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    // Store base64 without prefix
+    currentImageBase64 = dataUrl.split(',')[1];
+    // Show preview
+    document.getElementById('previewImg').src = dataUrl;
+    document.getElementById('previewWrap').style.display = 'block';
+    document.getElementById('scanArea').style.display = 'none';
+    document.getElementById('scanResultCard').style.display = 'none';
+    scannedGuests = [];
+    scannedGuests = [];
+  };
+  reader.readAsDataURL(file);
+  // Reset input so same file can be selected again
+  event.target.value = '';
+}
+
+function clearImage() {
+  currentImageBase64 = null;
+  document.getElementById('previewImg').src = '';
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('scanArea').style.display = 'block';
+  document.getElementById('scanResultCard').style.display = 'none';
+  scannedGuests = [];
+  // Reset both inputs
+  document.getElementById('cameraInput').value = '';
+  document.getElementById('galleryInput').value = '';
+}
+
+function clearScan() {
+  clearImage();
+}
+
+async function scanImage() {
+  if (!currentImageBase64) { alert('Vui lòng chọn ảnh trước!'); return; }
+
+  showLoading('AI đang đọc ảnh sổ tay...');
+
+  const prompt = `Bạn là trợ lý đọc danh sách khách mừng/phúng viếng từ ảnh sổ tay.
+
+Hãy đọc ảnh và trích xuất danh sách khách. Mỗi khách thường có: họ tên, địa chỉ, số tiền, ghi chú.
+
+Trả về JSON hợp lệ theo định dạng sau (KHÔNG có text nào khác ngoài JSON):
+{
+  "guests": [
+    {
+      "name": "Họ và tên đầy đủ",
+      "addr": "Địa chỉ hoặc rỗng nếu không có",
+      "money": 200000,
+      "note": "Ghi chú hoặc rỗng nếu không có"
+    }
+  ],
+  "note": "Ghi chú thêm nếu có thông tin không rõ hoặc rỗng"
+}
+
+Lưu ý:
+- Số tiền phải là số nguyên (đồng). Nếu ghi "200k" thì = 200000, "1tr" = 1000000, "500" có thể là 500000
+- Nếu không đọc được tên thì bỏ qua dòng đó
+- Nếu không có địa chỉ/ghi chú thì để chuỗi rỗng ""
+- Chỉ trả về JSON, không có giải thích`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: currentImageBase64
+              }
+            },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    hideLoading();
+
+    if (!response.ok) {
+      showScanError('Lỗi kết nối AI: ' + (data.error?.message || 'Không xác định'));
+      return;
+    }
+
+    const text = data.content.map(c => c.text||'').join('');
+    // Extract JSON
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      showScanError('AI không thể đọc được nội dung trong ảnh. Hãy thử chụp lại rõ hơn.');
+      return;
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+    if (!result.guests || result.guests.length === 0) {
+      showScanError('AI không tìm thấy khách nào trong ảnh. Hãy thử chụp lại.');
+      return;
+    }
+
+    scannedGuests = result.guests.map((g, i) => ({ ...g, id: Date.now()+i, money: parseInt(g.money)||0 }));
+    renderScanResult(result.note);
+
+  } catch(err) {
+    hideLoading();
+    showScanError('Lỗi: ' + err.message);
+  }
+}
+
+function showScanError(msg) {
+  document.getElementById('scanResultCard').style.display = 'block';
+  document.getElementById('scanResultList').innerHTML = `<div class="scan-error">⚠️ ${msg}</div>`;
+}
+
+function renderScanResult(aiNote) {
+  document.getElementById('scanResultCard').style.display = 'block';
+
+  let html = '';
+  if (aiNote) {
+    html += `<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e">💬 AI ghi chú: ${aiNote}</div>`;
+  }
+
+  html += `<div style="font-size:12px;color:var(--mid);margin-bottom:10px;font-weight:600">Tìm thấy <span style="color:var(--red)">${scannedGuests.length} khách</span> — Bạn có thể sửa trực tiếp trước khi thêm:</div>`;
+
+  scannedGuests.forEach((g, i) => {
+    html += `<div class="scan-row">
+      <div class="scan-stt">#${i+1}</div>
+      <button class="del-scan" onclick="removeScanRow(${g.id})">✕ Xóa</button>
+      <div style="padding-top:8px">
+        <input type="text" placeholder="Họ và tên *" value="${g.name}" oninput="updateScanGuest(${g.id},'name',this.value)" style="margin-bottom:6px">
+        <input type="text" placeholder="Địa chỉ" value="${g.addr}" oninput="updateScanGuest(${g.id},'addr',this.value)" style="margin-bottom:6px">
+        <div class="row-2-scan">
+          <input type="number" placeholder="Số tiền" value="${g.money}" oninput="updateScanGuest(${g.id},'money',this.value)" inputmode="numeric">
+          <input type="text" placeholder="Ghi chú" value="${g.note}" oninput="updateScanGuest(${g.id},'note',this.value)">
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('scanResultList').innerHTML = html;
+}
+
+function updateScanGuest(id, field, value) {
+  const g = scannedGuests.find(x => x.id===id);
+  if (g) g[field] = field==='money' ? (parseInt(value)||0) : value;
+}
+
+function removeScanRow(id) {
+  scannedGuests = scannedGuests.filter(x => x.id!==id);
+  if (scannedGuests.length===0) {
+    document.getElementById('scanResultCard').style.display='none';
+    return;
+  }
+  renderScanResult('');
+}
+
+function importScanned() {
+  const valid = scannedGuests.filter(g => g.name.trim() && g.money > 0);
+  if (valid.length===0) { alert('Không có khách hợp lệ! Vui lòng kiểm tra lại họ tên và số tiền.'); return; }
+
+  let ai = getActivePage();
+  let added = 0;
+
+  for (const g of valid) {
+    // If page full → auto create new page
+    if (pages[ai].guests.length >= pageSize) {
+      pages[ai].locked = true;
+      pages.push({ guests:[], locked:false });
+      ai = pages.length - 1;
+    }
+    pages[ai].guests.push({ id: Date.now()+Math.random(), name:g.name.trim(), addr:g.addr||'', money:g.money, note:g.note||'' });
+    added++;
+  }
+
+  currentViewPage = ai;
+  updateAddInfo();
+  clearScan();
+
+  alert(`✅ Đã thêm ${added} khách từ ảnh vào Trang ${ai+1}!\n\nVào tab Danh sách để kiểm tra.`);
+}
+</script>
+</body>
+</html>
